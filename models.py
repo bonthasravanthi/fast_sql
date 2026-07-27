@@ -1,0 +1,17 @@
+from sqlalchemy import Column, Integer, String
+from database import Base
+
+class products(Base):
+    __tablename__ = "products"
+
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    category = Column(String(50), nullable=False)
+    brand = Column(String(100), nullable=False)
+    price = Column(Integer, nullable=False)
+    color = Column(String(50), nullable=False)
+
+
+
+    
