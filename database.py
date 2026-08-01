@@ -9,7 +9,13 @@ load_dotenv()
 # DATABASE_URL = "postgresql://avnadmin:AVNS_YebMrQt0bjL6T9VAgut@pg-17488285-bonthasravanthi850-750a.k.aivencloud.com:19191/defaultdb?sslmode=require"
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(
-    DATABASE_URL)
+    DATABASE_URL,
+    connect_args={
+        "ssl": {
+               "ssl": True
+        }
+    }
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
