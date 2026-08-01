@@ -123,7 +123,7 @@ def login_user(user: schemas.UserLogin, db: Session, response: Response):
         "email": is_exists.email,
         "is_admin": is_exists.is_admin,
         "is_loggedin": True,
-        "exp": datetime.utcnow() + timedelta(seconds=10)
+        "exp": datetime.utcnow() + timedelta(seconds=30)
     }
 
     token = jwt.encode(
