@@ -1,15 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from typing import List
 
 import crud
 import schemas
-from database import Base, engine, SessionLocal
 
+from database import Base, engine, SessionLocal
+from auth import verify_admin
+
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+
+# ---------------- Database Session ----------------
 
 def get_db():
     db = SessionLocal()
@@ -19,29 +24,20 @@ def get_db():
         db.close()
 
 
-# Create Product
-@app.post("/products", response_model=schemas.ProductResponse)
-def create_product(
-    product: schemas.ProductCreate,
-    db: Session = Depends(get_db)
-):
-    return crud.create_product(db, product)
+# ---------------- Product APIs ----------------
 
-
-# Get All Products
+# Get all products (Admin only)
 @app.get("/products", response_model=List[schemas.ProductResponse])
-def get_products(
-    db: Session = Depends(get_db)
+def read_all_products(
+    db: Session = Depends(get_db),
+    user=Depends(verify_admin)
 ):
     return crud.get_products(db)
 
 
-# Get Product By ID
+# Get product by ID
 @app.get("/products/{product_id}", response_model=schemas.ProductResponse)
-def get_product(
-    product_id: int,
-    db: Session = Depends(get_db)
-):
+def read_product(product_id: int, db: Session = Depends(get_db)):
     product = crud.get_product(db, product_id)
 
     if not product:
@@ -53,7 +49,16 @@ def get_product(
     return product
 
 
-# Update Product
+# Create product
+@app.post("/products", response_model=schemas.ProductResponse)
+def create_product(
+    product: schemas.ProductCreate,
+    db: Session = Depends(get_db)
+):
+    return crud.create_product(db, product)
+
+
+# Update product
 @app.put("/products/{product_id}", response_model=schemas.ProductResponse)
 def update_product(
     product_id: int,
@@ -75,7 +80,7 @@ def update_product(
     return updated_product
 
 
-# Delete Product
+# Delete product
 @app.delete("/products/{product_id}")
 def delete_product(
     product_id: int,
@@ -97,13 +102,38 @@ def delete_product(
     }
 
 
-# Get Products By Category
+# Get products by category
 @app.get("/category/{category}")
-def get_products_by_category(
+def get_products_category(
     category: str,
     db: Session = Depends(get_db)
 ):
     return crud.get_products_by_category(
         db,
         category
+    )
+
+
+# ---------------- User APIs ----------------
+
+# Register User
+@app.post("/register_user")
+def register_user(
+    user: schemas.UserCreate,
+    db: Session = Depends(get_db)
+):
+    return crud.create_user(user, db)
+
+
+# Login User
+@app.post("/login")
+def login_user(
+    response: Response,
+    user: schemas.UserLogin,
+    db: Session = Depends(get_db)
+):
+    return crud.login_user(
+        user,
+        db,
+        response
     )
