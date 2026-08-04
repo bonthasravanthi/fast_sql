@@ -1,4 +1,60 @@
-main.py
+Product Management API
+
+Technologies:
+• FastAPI
+• SQLAlchemy
+• MySQL
+• JWT Authentication
+• Aiven Cloud Database
+• Render Deployment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     main.py
 -> entry point for the project 
 
 schemas:
