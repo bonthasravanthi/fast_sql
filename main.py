@@ -4,7 +4,6 @@ from typing import List
 
 import crud
 import schemas
-
 from database import Base, engine, SessionLocal
 from auth import verify_admin, verify_user
 
@@ -12,6 +11,17 @@ from auth import verify_admin, verify_user
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+
+# ---------------- Home ----------------
+
+@app.get("/")
+def home():
+    return {
+        "message": "Welcome to Product Management API",
+        "status": "Running",
+        "documentation": "/docs"
+    }
 
 
 # ---------------- Database Session ----------------
@@ -26,7 +36,17 @@ def get_db():
 
 # ---------------- Product APIs ----------------
 
-# Get all products (Logged-in users)
+# Create Product (Admin only)
+@app.post("/products", response_model=schemas.ProductResponse)
+def create_product(
+    product: schemas.ProductCreate,
+    db: Session = Depends(get_db),
+    admin=Depends(verify_admin)
+):
+    return crud.create_product(db, product)
+
+
+# Read All Products (User & Admin)
 @app.get("/products", response_model=List[schemas.ProductResponse])
 def read_all_products(
     db: Session = Depends(get_db),
@@ -35,7 +55,7 @@ def read_all_products(
     return crud.get_products(db)
 
 
-# Get product by ID (Logged-in users)
+# Read Product by ID (User & Admin)
 @app.get("/products/{product_id}", response_model=schemas.ProductResponse)
 def read_product(
     product_id: int,
@@ -45,103 +65,75 @@ def read_product(
     product = crud.get_product(db, product_id)
 
     if not product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
+        raise HTTPException(status_code=404, detail="Product not found")
 
     return product
 
 
-# Create product (Admin only)
-@app.post("/products", response_model=schemas.ProductResponse)
-def create_product(
-    product: schemas.ProductCreate,
-    db: Session = Depends(get_db),
-    user=Depends(verify_admin)
-):
-    return crud.create_product(db, product)
-
-
-# Update product (Admin only)
+# Update Product (Admin only)
 @app.put("/products/{product_id}", response_model=schemas.ProductResponse)
 def update_product(
     product_id: int,
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
-    user=Depends(verify_admin)
+    admin=Depends(verify_admin)
 ):
-    updated_product = crud.update_product(
-        db,
-        product_id,
-        product
-    )
+    updated = crud.update_product(db, product_id, product)
 
-    if not updated_product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Product not found")
 
-    return updated_product
+    return updated
 
 
-# Delete product (Admin only)
+# Delete Product (Admin only)
 @app.delete("/products/{product_id}")
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
-    user=Depends(verify_admin)
+    admin=Depends(verify_admin)
 ):
-    deleted_product = crud.delete_product(
-        db,
-        product_id
-    )
+    deleted = crud.delete_product(db, product_id)
 
-    if not deleted_product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product not found"
-        )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Product not found")
 
-    return {
-        "message": "Product deleted successfully"
-    }
+    return {"message": "Product deleted successfully"}
 
 
-# Get products by category (Logged-in users)
-@app.get("/category/{category}")
-def get_products_category(
+# Get Products by Category
+@app.get("/products/category/{category}", response_model=List[schemas.ProductResponse])
+def get_products_by_category(
     category: str,
     db: Session = Depends(get_db),
     user=Depends(verify_user)
 ):
-    return crud.get_products_by_category(
-        db,
-        category
-    )
+    return crud.get_products_by_category(db, category)
 
 
-# ---------------- User APIs ----------------
+# ---------------- Authentication ----------------
 
-# Register User
-@app.post("/register_user")
-def register_user(
+# Register
+@app.post("/register", response_model=schemas.UserResponse)
+def register(
     user: schemas.UserCreate,
     db: Session = Depends(get_db)
 ):
     return crud.create_user(user, db)
 
 
-# Login User
+# Login
 @app.post("/login")
-def login_user(
-    response: Response,
+def login(
     user: schemas.UserLogin,
+    response: Response,
     db: Session = Depends(get_db)
 ):
-    return crud.login_user(
-        user,
-        db,
-        response
-    )
+    return crud.login_user(user, db, response)
+
+
+# Logout
+@app.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Logged out successfully"}
